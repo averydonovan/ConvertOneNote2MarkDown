@@ -140,6 +140,17 @@ Default:
             default = 'markdown-simple_tables-multiline_tables-grid_tables+pipe_tables'
             value = 'markdown-simple_tables-multiline_tables-grid_tables+pipe_tables'
         }
+        yamlHeaderEnabled = @{
+            description = @'
+Whether to include YAML header at top of document
+This can be used by programs such as Joplin that can import markdown files with front matter
+1: Don't include - Default
+2: Include YAML header and remove page name from top of document
+'@
+            default = 1
+            value = 1
+            validateRange = 1,2
+        }
         headerTimestampEnabled = @{
             description = @'
 Whether to include page timestamp and separator at top of document
@@ -176,6 +187,18 @@ Whether to clear escape symbols from md files. See: https://pandoc.org/MANUAL.ht
 Whether to use Line Feed (LF) or Carriage Return + Line Feed (CRLF) for new lines
 1: LF (unix) - Default
 2: CRLF (windows)
+'@
+            default = 1
+            value = 1
+            validateRange = 1,2
+        }
+        removeImageAttributes = @{
+            description = @'
+Whether to remove image attributes during Pandoc conversion
+This makes it more likely that image references will be in markdown format instead of HTML <img> tags
+Note that some Pandoc conversion options may still remove image attributes 
+1: Leave image attributes - Default
+2: Remove image attributes 
 '@
             default = 1
             value = 1
@@ -918,9 +941,19 @@ Function New-SectionGroupConversionConfig {
                                     @{
                                         searchRegex = '^\s*'
                                         replacement = & {
-                                            $heading = "# $( $pageCfg['object'].name )"
+                                            $heading = ""
+                                            if ($config['yamlHeaderEnabled']['value'] -eq 2) {
+                                                $heading = "---`n"
+                                                $heading += "title: |`n"
+                                                $heading += "  $( $pageCfg['object'].name )`n"
+                                                $heading += "date: $( $pageCfg['dateTime'].ToString('yyyy-MM-dd HH:mm:ss zz00') )`n"
+                                                $heading += "updated: $( $pageCfg['lastModifiedTime'].ToString('yyyy-MM-dd HH:mm:ss zz00') )`n"
+                                                $heading += "---`n`n"
+                                            }else {
+                                                $heading = "# $( $pageCfg['object'].name )`n`n"
+                                            }
                                             if ($config['headerTimestampEnabled']['value'] -eq 1) {
-                                                $heading += "`n`nCreated: $(  $pageCfg['dateTime'].ToString('yyyy-MM-dd HH:mm:ss zz00') )"
+                                                $heading += "Created: $(  $pageCfg['dateTime'].ToString('yyyy-MM-dd HH:mm:ss zz00') )"
                                                 $heading += "`n`nModified: $(  $pageCfg['lastModifiedTime'].ToString('yyyy-MM-dd HH:mm:ss zz00') )"
                                                 $heading += "`n`n---`n`n"
                                             }
@@ -1173,6 +1206,9 @@ Function Convert-OneNotePage {
                         'docx'
                         '-t'
                         $pageCfg['conversion']
+                        if ($config['removeImageAttributes']['value'] -eq 2) {
+                            "--lua-filter=`"$PSScriptRoot/no-img-attr.lua`""
+                        }
                         '-i'
                         if ($pageCfg['docxExportFilePath'] -match ' ') {
                             "`"$( $pageCfg['docxExportFilePath'] )`"" # Add double-quotes to path containing spaces
