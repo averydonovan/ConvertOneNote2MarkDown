@@ -1284,6 +1284,24 @@ Function Convert-OneNotePage {
                     ) -join "`n"
                 }
 
+                # Remove '\' from attachment names
+                try {
+                    $attachmentNameMatches = $content | Select-String -Pattern "(?<=\\<\\<).+?(?=\\>\\>)"
+	
+                    if ($attachmentNameMatches) {
+                        foreach ($attachmentNameMatch in $attachmentNameMatches.Matches) {
+                            $attachmentNameMatch.Value
+                            $attachmentNameMatchCorrected = $attachmentNameMatch.Value -replace [regex]::Escape('\'), ''
+                            
+                            "Mutation of markdown: Remove '\' from attachment names. Find: '$( $attachmentNameMatch.Value )', Replacement: '$( $attachmentNameMatchCorrected )'" | Write-Verbose 
+
+                            $content = $content -replace [regex]::Escape($attachmentNameMatch), $attachmentNameMatchCorrected
+                        }
+                    }
+                }catch {
+                    Write-Error "Failed to remove '\' from attachment names. Exception: $( $_.Exception.Message )"
+                }
+                
                 # Mutate
                 foreach ($m in $pageCfg['mutations']) {
                     foreach ($r in $m['replacements']) {
