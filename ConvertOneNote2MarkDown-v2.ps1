@@ -1207,7 +1207,7 @@ Function Convert-OneNotePage {
                         '-t'
                         $pageCfg['conversion']
                         if ($config['removeImageAttributes']['value'] -eq 2) {
-                            "--lua-filter=`"$PSScriptRoot/no-img-attr.lua`""
+                            "--lua-filter=`"$( [io.path]::combine($PSScriptRoot, 'no-img-attr.lua') )`""
                         }
                         '-i'
                         if ($pageCfg['docxExportFilePath'] -match ' ') {
@@ -1320,18 +1320,22 @@ Function Convert-OneNotePage {
                     ) -join "`n"
                 }
 
-                # Remove '\' from attachment names
-                try {
-                    $attachmentNameMatches = $content | Select-String -Pattern "(?<=\\<\\<).+?(?=\\>\\>)"
-	
+                # Remove '\' inserted by Pandoc from attachment names so markdown filename reference mutation works
+                try {                    
+                    $attachmentNamePattern = '((?<=\\<\\<)|(?<=&lt;&lt;))'
+                    $attachmentNamePattern += '.+?'
+                    $attachmentNamePattern += '((?=\\>\\>)|(?=&gt;&gt;))'
+                    $attachmentNameMatches = $content | Select-String -Pattern $attachmentNamePattern
+                    
                     if ($attachmentNameMatches) {
                         foreach ($attachmentNameMatch in $attachmentNameMatches.Matches) {
-                            $attachmentNameMatch.Value
                             $attachmentNameMatchCorrected = $attachmentNameMatch.Value -replace [regex]::Escape('\'), ''
                             
                             "Mutation of markdown: Remove '\' from attachment names. Find: '$( $attachmentNameMatch.Value )', Replacement: '$( $attachmentNameMatchCorrected )'" | Write-Verbose 
 
-                            $content = $content -replace [regex]::Escape($attachmentNameMatch), $attachmentNameMatchCorrected
+                            if (!$config['dryRun']['value']) {
+                                $content = $content -replace [regex]::Escape($attachmentNameMatch), $attachmentNameMatchCorrected
+                            }
                         }
                     }
                 }catch {

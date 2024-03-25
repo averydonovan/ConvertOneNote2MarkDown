@@ -1,4 +1,4 @@
-#
+﻿#
 # Note: This config file is for those who are lazy to type in configuration everytime you run ./ConvertOneNote2MarkDown-v2.ps1
 #
 # Steps:
@@ -63,6 +63,12 @@ $medialocation = 1
 #   markdown-simple_tables-multiline_tables-grid_tables+pipe_tables
 $conversion = 'markdown-simple_tables-multiline_tables-grid_tables+pipe_tables'
 
+# Whether to include YAML header at top of document
+# This can be used by programs such as Joplin that can import markdown files with front matter
+# 1: Don't include - Default
+# 2: Include YAML header and remove page name from top of document
+$yamlHeaderEnabled = 1
+
 # Whether to include page timestamp and separator at top of document
 # 1: Include - Default
 # 2: Don't include
@@ -83,6 +89,13 @@ $keepescape = 1
 # 1: LF (unix) - Default
 # 2: CRLF (windows)
 $newlineCharacter = 1
+
+# Whether to remove image attributes during Pandoc conversion
+# This makes it more likely that image references will be in markdown format instead of HTML <img> tags
+# Note that some Pandoc conversion options may still remove image attributes 
+# 1: Leave image attributes - Default
+# 2: Remove image attributes
+$removeImageAttributes = 1
 
 # Whether to include a PDF export alongside the markdown file
 # 1: Don't include PDF - Default
